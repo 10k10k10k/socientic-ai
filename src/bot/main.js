@@ -1,4 +1,4 @@
-const { Telegraf } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 require('dotenv').config();
 const supabase = require('../db');
 const { generateSolanaWallet, generateBaseWallet } = require('../utils/wallets');
@@ -15,23 +15,72 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
-// Menu Handler
-bot.start((ctx) => {
-  ctx.reply('**Welcome to Socientic AI** 🥧\n\nChoose an option below:', {
-    parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '🤖 Spawn Trading Bot', callback_data: 'spawn_bot' },
-          { text: '🎁 Contribute Data (Airdrop)', callback_data: 'contribute_data' }
-        ],
-        [
-          { text: '📊 My Dashboard', callback_data: 'check_status' }
+// Menu Handler (Smart)
+bot.start(async (ctx) => {
+  const userId = ctx.from.id.toString();
+  
+  // Check if user exists
+  const { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+  const hasAgent = user && (user.wallet_sol_pub || user.wallet_base_pub);
+
+  if (hasAgent) {
+    // EXISTING USER MENU
+    ctx.reply(`**Welcome back, ${ctx.from.first_name}!** 🥧\n\nYour Agent is active. Manage it below:`, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '💰 Fund Wallets', callback_data: 'fund_wallets' },
+            { text: '📡 Data Feeds', callback_data: 'view_feeds' }
+          ],
+          [
+            { text: '🗣 Give Opinion', callback_data: 'give_opinion' },
+            { text: '📊 Dashboard', callback_data: 'check_status' }
+          ]
         ]
-      ]
-    }
-  });
+      }
+    });
+  } else {
+    // NEW USER MENU
+    ctx.reply('**Welcome to Socientic AI** 🥧\n\nChoose an option below:', {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🤖 Spawn Trading Bot', callback_data: 'spawn_bot' },
+            { text: '🎁 Contribute Data (Airdrop)', callback_data: 'contribute_data' }
+          ]
+        ]
+      }
+    });
+  }
 });
+
+// Action: Fund Wallets (Show Addresses)
+bot.action('fund_wallets', async (ctx) => {
+  const userId = ctx.from.id.toString();
+  const { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+  
+  if (!user) return ctx.reply('Error finding user.');
+
+  let msg = `💰 **Funding Wallets**\n\n`;
+  if (user.wallet_sol_pub) msg += `🟣 **Solana:**\n\`${user.wallet_sol_pub}\`\n\n`;
+  if (user.wallet_base_pub) msg += `🔵 **Base:**\n\`${user.wallet_base_pub}\`\n\n`;
+  msg += `Send funds to start trading.`;
+
+  ctx.reply(msg, { parse_mode: 'Markdown' });
+});
+
+// Action: Give Opinion (Instruction)
+bot.action('give_opinion', (ctx) => {
+  ctx.reply('Just type your thoughts here! I am listening. \n\nExample: "I think $SOL is going to 200" or "@influencer is smart".');
+});
+
+// Action: View Feeds (Mock)
+bot.action('view_feeds', (ctx) => {
+  ctx.reply('📡 **Active Data Feeds**\n\n• Group: AlphaCallers (Live)\n• Group: GemHunters (Live)\n\n*Go to Dashboard to add more.*');
+});
+
 
 // Action: Spawn Bot (Selection)
 bot.action('spawn_bot', (ctx) => {
@@ -45,74 +94,48 @@ bot.action('spawn_bot', (ctx) => {
   });
 });
 
-// Action: Create Wallet
-async function handleWalletCreation(ctx, network) {
+// Action: Create Wallet (Dual Generation)
+async function handleWalletCreation(ctx, preferredNetwork) {
   const userId = ctx.from.id.toString();
   
   // Check existing
   const { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
   
-  if (user && (network === 'SOL' ? user.wallet_sol_pub : user.wallet_base_pub)) {
-    return ctx.reply(`You already have a ${network} agent wallet!\nAddress: \`${network === 'SOL' ? user.wallet_sol_pub : user.wallet_base_pub}\``, { parse_mode: 'Markdown' });
+  // If user has the PREFERRED wallet already, show it
+  if (user && (preferredNetwork === 'SOL' ? user.wallet_sol_pub : user.wallet_base_pub)) {
+    return ctx.reply(`You already have a ${preferredNetwork} agent wallet!`, { parse_mode: 'Markdown' });
   }
 
-  let wallet, privKey;
-  if (network === 'SOL') {
-    const keypair = generateSolanaWallet();
-    wallet = keypair.address;
-    privKey = keypair.privateKey;
-    await supabase.from('users').upsert({ telegram_id: userId, wallet_sol_pub: wallet, wallet_sol_priv: privKey }, { onConflict: 'telegram_id' });
-  } else {
-    const keypair = generateBaseWallet();
-    wallet = keypair.address;
-    privKey = keypair.privateKey;
-    await supabase.from('users').upsert({ telegram_id: userId, wallet_base_pub: wallet, wallet_base_priv: privKey }, { onConflict: 'telegram_id' });
-  }
+  // Generate BOTH wallets regardless of choice
+  const solKeypair = generateSolanaWallet();
+  const baseKeypair = generateBaseWallet();
 
-  const nativeToken = network === 'SOL' ? 'SOL' : 'ETH';
+  // Save both to DB
+  await supabase.from('users').upsert({ 
+    telegram_id: userId, 
+    username: ctx.from.username,
+    wallet_sol_pub: solKeypair.address, 
+    wallet_sol_priv: solKeypair.privateKey, 
+    wallet_base_pub: baseKeypair.address, 
+    wallet_base_priv: baseKeypair.privateKey 
+  }, { onConflict: 'telegram_id' });
+
+  // Display ONLY the preferred one (focus), but mention the other exists
+  const mainWallet = preferredNetwork === 'SOL' ? solKeypair.address : baseKeypair.address;
+  const mainPriv = preferredNetwork === 'SOL' ? solKeypair.privateKey : baseKeypair.privateKey;
   
   ctx.reply(
-    `✅ **${network} Agent Created!**\n\n` +
-    `**Your Wallet:**\n\`${wallet}\`\n\n` +
-    `**⚠️ REQUIRED FUNDING:**\n` +
-    `1. Send **${nativeToken}** (Trading Capital + Gas)\n` +
-    `2. Send **USDC** (To pay for AI Compute/API Fees)\n\n` +
-    `**Next Steps:**\n` +
-    `• Add me to your Group Chat to feed me data.\n` +
-    `• OR Go to the Dashboard to search for existing groups to opt-in.\n` +
-    `• You can chat with me here anytime!`,
+    `✅ **Agent Initialized (${preferredNetwork})**\n\n` +
+    `**Public Address:** \`${mainWallet}\`\n\n` +
+    `**🔑 Private Key (SAVE NOW):**\n\`${mainPriv}\`\n\n` +
+    `_Hidden: A ${preferredNetwork === 'SOL' ? 'Base' : 'Solana'} wallet was also created for you. Check /status to reveal it._\n\n` +
+    `**Next:** Fund this wallet with **${preferredNetwork === 'SOL' ? 'SOL' : 'ETH'}** + **USDC** to start.`,
     { parse_mode: 'Markdown' }
   );
 }
 
 bot.action('spawn_sol', (ctx) => handleWalletCreation(ctx, 'SOL'));
 bot.action('spawn_base', (ctx) => handleWalletCreation(ctx, 'BASE'));
-
-// General Chat Handler (Conversational Data)
-bot.on('text', async (ctx) => {
-  // If it's a command, ignore
-  if (ctx.message.text.startsWith('/')) return;
-
-  // If it's a DM, treat as conversational feedback
-  if (ctx.chat.type === 'private') {
-    const text = ctx.message.text;
-    console.log(`[Conversation] User ${ctx.from.username}: ${text}`);
-    
-    // Save to DB
-    await supabase.from('conversations').insert({
-      user_id: ctx.from.id.toString(),
-      message: text,
-      context: 'dm_feedback'
-    });
-
-    // Simple acknowledgment (Mock AI)
-    ctx.reply('Message received. I am analyzing this input for future trading decisions. 🧠');
-    return;
-  }
-
-  // If Group, run the Scan Logic (Existing code)
-  // ...
-
 
 // Action: Contribute Data
 bot.action('contribute_data', (ctx) => {
@@ -132,132 +155,35 @@ bot.action('contribute_data', (ctx) => {
 
 // Action: Status
 bot.action('check_status', async (ctx) => {
-    // Reuse status logic
     ctx.reply('Fetching your stats...');
 });
 
-
-bot.help((ctx) => {
-  ctx.reply('Commands:\n/start - Initialize the bot\n/spawn - Create your trading agent & wallets\n/status - Check your gas tank and active bots\n/track - Start tracking predictive power in this group (Admin only)');
-});
-
-bot.command('spawn', async (ctx) => {
-  const userId = ctx.from.id.toString();
-  const username = ctx.from.username || null;
-  const firstName = ctx.from.first_name || null;
-
-  try {
-    // Check if user exists and has wallets
-    const { data: user, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('telegram_id', userId)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "Row not found"
-      console.error('Error fetching user:', fetchError);
-      return ctx.reply('An error occurred while checking your profile.');
-    }
-
-    let solWallet, baseWallet;
-    let solPriv, basePriv;
-
-    if (user && user.wallet_sol_pub && user.wallet_base_pub) {
-      // User already has wallets
-      solWallet = user.wallet_sol_pub;
-      baseWallet = user.wallet_base_pub;
-      return ctx.reply(
-        `You already have an active Agent! 🤖\n\n` +
-        `**SOL Wallet:** \`${solWallet}\`\n` +
-        `**BASE Wallet:** \`${baseWallet}\`\n\n` +
-        `Send SOL/USDC to these addresses to fund your Agent.`,
-        { parse_mode: 'Markdown' }
-      );
-    }
-
-    // Generate new wallets
-    const solKeypair = generateSolanaWallet();
-    const baseKeypair = generateBaseWallet();
-
-    solWallet = solKeypair.address;
-    solPriv = solKeypair.privateKey;
-    baseWallet = baseKeypair.address;
-    basePriv = baseKeypair.privateKey;
-
-    // Save to DB
-    const { error: upsertError } = await supabase.from('users').upsert({
-      telegram_id: userId,
-      username: username,
-      first_name: firstName,
-      wallet_sol_pub: solWallet,
-      wallet_sol_priv: solPriv,
-      wallet_base_pub: baseWallet,
-      wallet_base_priv: basePriv
-    }, { onConflict: 'telegram_id' });
-
-    if (upsertError) {
-      console.error('Error saving wallets:', upsertError);
-      return ctx.reply('Failed to spawn agent. Please try again.');
-    }
-
-    ctx.reply(
-      `Agent Spawned! 🤖\n\n` +
-      `Here are your unique deposit addresses:\n\n` +
-      `**SOL (Solana):**\n\`${solWallet}\`\n\n` +
-      `**BASE (EVM):**\n\`${baseWallet}\`\n\n` +
-      `Send SOL or USDC to these addresses to fund your Agent.`,
-      { parse_mode: 'Markdown' }
-    );
-
-  } catch (err) {
-    console.error('Spawn error:', err);
-    ctx.reply('An unexpected error occurred.');
-  }
-});
-
-bot.command('status', async (ctx) => {
-  const userId = ctx.from.id.toString();
-
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('telegram_id', userId)
-      .single();
-
-    if (error || !user || !user.wallet_sol_pub) {
-      return ctx.reply('You haven\'t spawned an agent yet. Use /spawn to get started.');
-    }
-
-    // Mock Balances (TODO: Implement real RPC calls)
-    const solBalance = (Math.random() * 2).toFixed(2);
-    const baseBalance = (Math.random() * 0.1).toFixed(3);
-    
-    // Mock Win Rate (TODO: Fetch from scorer)
-    const winRate = 'N/A'; 
-
-    ctx.reply(
-      `📊 **Agent Status**\n\n` +
-      `**Balances:**\n` +
-      `SOL: ${solBalance} SOL\n` +
-      `BASE: ${baseBalance} ETH\n\n` +
-      `**Performance:**\n` +
-      `Win Rate: ${winRate}\n` +
-      `Active Trades: 0`,
-      { parse_mode: 'Markdown' }
-    );
-
-  } catch (err) {
-    console.error('Status error:', err);
-    ctx.reply('Could not fetch status.');
-  }
-});
-
-// Listener for coin mentions
+// General Chat Handler (Passive Opinion Logger)
 bot.on('text', async (ctx) => {
-  const text = ctx.message.text;
-  if (!text) return;
+  // If it's a command, ignore
+  if (ctx.message.text.startsWith('/')) return;
 
+  // If it's a DM, treat as conversational feedback
+  if (ctx.chat.type === 'private') {
+    const text = ctx.message.text;
+    console.log(`[Opinion] User ${ctx.from.username}: ${text}`);
+    
+    // Save to DB with "Pending Weight" (to be calculated based on user's win rate later)
+    await supabase.from('conversations').insert({
+      user_id: ctx.from.id.toString(),
+      message: text,
+      context: 'user_opinion',
+      tags: ['sentiment_data'] 
+    });
+
+    // Passive acknowledgment
+    ctx.reply('Opinion logged. 📝');
+    return;
+  }
+
+  // If Group, run the Scan Logic (Existing code)
+  const text = ctx.message.text;
+  
   // Look for CA-like strings (0x... or Solana-like base58 strings - usually 32-44 chars)
   const caRegex = /0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}/g;
   const cas = text.match(caRegex) || [];
