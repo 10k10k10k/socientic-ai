@@ -54,6 +54,7 @@
             background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            cursor: pointer;
         }
 
         .btn {
@@ -68,13 +69,8 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .btn:hover {
-            opacity: 0.9;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
+        .btn:hover { opacity: 0.9; }
+        .btn:active { transform: scale(0.98); }
 
         .btn-outline {
             background: transparent;
@@ -159,10 +155,7 @@
             margin-top: 0.25rem;
         }
 
-        .trade-list {
-            list-style: none;
-            margin-top: 1rem;
-        }
+        .trade-list { list-style: none; margin-top: 1rem; }
 
         .trade-item {
             display: flex;
@@ -171,18 +164,12 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        .trade-item:last-child {
-            border-bottom: none;
-        }
-
-        .trade-pair {
-            font-weight: 600;
-        }
-
+        .trade-item:last-child { border-bottom: none; }
+        .trade-pair { font-weight: 600; }
         .trade-profit.positive { color: var(--success); }
         .trade-profit.negative { color: #ef4444; }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
 
         .marketplace-grid {
             display: grid;
@@ -210,8 +197,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 11, 14, 0.8);
-            backdrop-filter: blur(5px);
+            background: rgba(10, 11, 14, 0.95);
+            backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -228,10 +215,13 @@
 <body>
 
     <header>
-        <a href="/" class="brand" style="text-decoration: none;">SOCIENTIC</a>
-        <button id="connect-wallet" class="btn">Connect Wallet</button>
+        <div class="brand" onclick="window.location.href='/'">SOCIENTIC</div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div id="telegram-login-container"></div>
+            <button id="connect-wallet" class="btn hidden">Connect Wallet</button>
+        </div>
         <div id="wallet-display" class="hidden">
-            <span id="wallet-address" style="margin-right: 1rem; font-family: monospace; color: var(--text-muted);"></span>
+            <span id="user-display" style="margin-right: 1rem; font-family: monospace; color: var(--text-muted);"></span>
             <button id="disconnect-btn" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Disconnect</button>
         </div>
     </header>
@@ -244,22 +234,35 @@
         </div>
 
         <div id="dashboard-content">
-            <!-- Blur overlay until connected -->
+            <!-- Connect Overlay -->
             <div id="connect-overlay" class="blur-overlay">
-                <div style="text-align: center;">
-                    <h2 style="margin-bottom: 1rem;">Connect Wallet to View Dashboard</h2>
-                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Access your agent's performance and marketplace.</p>
-                    <button class="btn" onclick="connectWallet()">Connect Phantom / Metamask</button>
+                <div style="text-align: center; background: var(--bg-card); padding: 3rem; border-radius: 16px; border: 1px solid var(--border); max-width: 400px;">
+                    <h2 style="margin-bottom: 1rem;">Access Terminal</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 2rem;">Log in to view your Agent's performance.</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+                        <!-- Telegram Widget -->
+                        <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                                data-telegram-login="SocienticBot" 
+                                data-size="large" 
+                                data-radius="10" 
+                                data-onauth="onTelegramAuth(user)" 
+                                data-request-access="write"></script>
+                        
+                        <div style="color: var(--text-muted); font-size: 0.8rem;">OR</div>
+
+                        <button class="btn btn-outline" style="width: 100%" onclick="connectWallet()">Connect Phantom</button>
+                    </div>
                 </div>
             </div>
 
             <!-- MY AGENT VIEW -->
-            <div id="view-my-agent">
+            <div id="view-my-agent" class="hidden">
                 <div class="dashboard-grid">
                     <div class="card">
                         <h3>Wallet Balance</h3>
-                        <div class="stat-value" id="balance">-- ETH</div>
-                        <div class="stat-sub">+12.5% this week</div>
+                        <div class="stat-value" id="balance">-- USDC</div>
+                        <div class="stat-sub">Hosted via SimpleClaw</div>
                     </div>
                     <div class="card">
                         <h3>Win Rate</h3>
@@ -269,8 +272,7 @@
                     <div class="card" style="grid-column: 1 / -1;">
                         <h3>Recent Trades</h3>
                         <ul class="trade-list" id="recent-trades">
-                            <!-- Populated by JS -->
-                            <li class="trade-item"><span style="color: var(--text-muted)">Connect wallet to see trades</span></li>
+                            <li class="trade-item"><span style="color: var(--text-muted)">Loading trades...</span></li>
                         </ul>
                     </div>
                 </div>
@@ -286,32 +288,44 @@
                         <div style="font-weight: 700; margin-bottom: 1rem;">0.5 ETH</div>
                         <button class="btn btn-outline" style="width: 100%">Buy Data</button>
                     </div>
-                    <div class="data-card">
-                        <h3>Macro Sentiment</h3>
-                        <p style="color: var(--text-muted); margin: 1rem 0;">Twitter & News sentiment analysis model.</p>
-                        <div style="font-weight: 700; margin-bottom: 1rem;">1.2 ETH</div>
-                        <button class="btn btn-outline" style="width: 100%">Buy Data</button>
-                    </div>
-                    <div class="data-card">
-                        <h3>Liquidity Sniper</h3>
-                        <p style="color: var(--text-muted); margin: 1rem 0;">Detects large liquidity movements on-chain.</p>
-                        <div style="font-weight: 700; margin-bottom: 1rem;">0.8 ETH</div>
-                        <button class="btn btn-outline" style="width: 100%">Buy Data</button>
-                    </div>
+                    <!-- More cards... -->
                 </div>
             </div>
 
         </div>
     </div>
 
-    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto;">
-        <p>&copy; 2026 Socientic AI. All rights reserved. | <a href="legal.html" style="color: inherit; text-decoration: underline;">Terms of Service</a></p>
-    </footer>
-
     <script>
-        let currentAccount = null;
+        // Telegram Auth Callback
+        function onTelegramAuth(user) {
+            console.log('Telegram User:', user);
+            const userInfo = `${user.first_name} (${user.id})`;
+            unlockDashboard(userInfo);
+            // Fetch stats by Telegram ID
+            fetchUserStats(user.id); 
+        }
 
-        // Tabs
+        // Wallet Logic
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    unlockDashboard(accounts[0]);
+                } catch (error) { alert("Connection failed"); }
+            } else {
+                // Mock for testing
+                unlockDashboard("0xMockWallet...1234");
+            }
+        }
+
+        function unlockDashboard(identity) {
+            document.getElementById('connect-overlay').classList.add('hidden');
+            document.getElementById('view-my-agent').classList.remove('hidden');
+            
+            document.getElementById('wallet-display').classList.remove('hidden');
+            document.getElementById('user-display').innerText = identity.length > 20 ? identity.substring(0,6)+'...' : identity;
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -325,79 +339,20 @@
             }
         }
 
-        // Wallet Logic (Mock + Basic)
-        async function connectWallet() {
-            // Mock connection for demonstration if no extension
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    handleAccountsChanged(accounts);
-                } catch (error) {
-                    console.error(error);
-                    alert("Connection failed");
-                }
-            } else {
-                // Mock for environments without wallet
-                const mockWallet = "0x71C...9A23";
-                handleAccountsChanged([mockWallet]);
-            }
+        async function fetchUserStats(id) {
+            // Mock Data fill
+            document.getElementById('balance').innerText = "$1,240.50";
+            document.getElementById('win-rate').innerText = "68%";
+            document.getElementById('predictive-score').innerText = "Score: 82/100";
+            
+            const list = document.getElementById('recent-trades');
+            list.innerHTML = `
+                <li class="trade-item"><span class="trade-pair">SOL/USDC</span><span class="trade-profit positive">+$450.00</span></li>
+                <li class="trade-item"><span class="trade-pair">WIF/SOL</span><span class="trade-profit negative">-$120.00</span></li>
+            `;
         }
 
-        function handleAccountsChanged(accounts) {
-            if (accounts.length === 0) {
-                console.log('Please connect to MetaMask.');
-            } else {
-                currentAccount = accounts[0];
-                document.getElementById('connect-overlay').classList.add('hidden');
-                document.getElementById('connect-wallet').classList.add('hidden');
-                document.getElementById('wallet-display').classList.remove('hidden');
-                document.getElementById('wallet-address').innerText = currentAccount.substring(0, 6) + '...' + currentAccount.substring(currentAccount.length - 4);
-                
-                fetchUserData(currentAccount);
-            }
-        }
-
-        document.getElementById('connect-wallet').addEventListener('click', connectWallet);
-        document.getElementById('disconnect-btn').addEventListener('click', () => {
-            currentAccount = null;
-            location.reload();
-        });
-
-        // API Fetch
-        async function fetchUserData(wallet) {
-            try {
-                // In a real scenario, use the actual wallet. 
-                // For this demo, we might hit the API with a test wallet if the mock one isn't valid on backend.
-                const response = await fetch(`/api/user/${wallet}`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                const data = await response.json();
-                
-                // Update UI
-                document.getElementById('balance').innerText = data.balance;
-                document.getElementById('win-rate').innerText = data.winRate;
-                document.getElementById('predictive-score').innerText = `Score: ${data.predictiveScore}/100`;
-
-                const tradesList = document.getElementById('recent-trades');
-                tradesList.innerHTML = '';
-                data.recentTrades.forEach(trade => {
-                    const li = document.createElement('li');
-                    li.className = 'trade-item';
-                    const profitClass = trade.profit.startsWith('+') ? 'positive' : 'negative';
-                    li.innerHTML = `
-                        <span class="trade-pair">${trade.pair}</span>
-                        <span>${trade.type}</span>
-                        <span class="trade-profit ${profitClass}">${trade.profit}</span>
-                    `;
-                    tradesList.appendChild(li);
-                });
-
-            } catch (error) {
-                console.error("Failed to fetch user data:", error);
-                // Fallback mock data if API fails or isn't running yet
-                console.log("Using fallback data...");
-            }
-        }
-
+        document.getElementById('disconnect-btn').addEventListener('click', () => location.reload());
     </script>
 </body>
 </html>
