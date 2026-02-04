@@ -228,7 +228,7 @@
 <body>
 
     <header>
-        <div class="brand">SOCIENTIC</div>
+        <a href="/" class="brand" style="text-decoration: none;">SOCIENTIC</a>
         <button id="connect-wallet" class="btn">Connect Wallet</button>
         <div id="wallet-display" class="hidden">
             <span id="wallet-address" style="margin-right: 1rem; font-family: monospace; color: var(--text-muted);"></span>
@@ -303,6 +303,10 @@
 
         </div>
     </div>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto;">
+        <p>&copy; 2026 Socientic AI. All rights reserved. | <a href="legal.html" style="color: inherit; text-decoration: underline;">Terms of Service</a></p>
+    </footer>
 
     <script>
         let currentAccount = null;

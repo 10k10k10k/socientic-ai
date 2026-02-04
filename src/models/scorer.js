@@ -1,7 +1,30 @@
 const supabase = require('../db');
 
 /**
- * Calculates a win rate score (0-100) for a given user based on their scans.
+ * Calculates the Sharpe Ratio for a given history of returns.
+ * Sharpe = (Avg Return - RiskFreeRate) / StdDev
+ * 
+ * @param {number[]} returns - Array of percentage returns.
+ * @returns {number} - The calculated Sharpe Ratio.
+ */
+function calculateSharpeRatio(returns) {
+    if (!returns || returns.length === 0) return 0;
+
+    const riskFreeRate = 0; // Assuming 0% risk-free rate for simplicity
+    const averageReturn = returns.reduce((sum, val) => sum + val, 0) / returns.length;
+    
+    // Calculate Standard Deviation
+    const variance = returns.reduce((sum, val) => sum + Math.pow(val - averageReturn, 2), 0) / returns.length;
+    const stdDev = Math.sqrt(variance);
+
+    if (stdDev === 0) return 0; // Avoid division by zero
+
+    return (averageReturn - riskFreeRate) / stdDev;
+}
+
+/**
+ * Calculates a predictive score (0-100) for a given user based on their scans.
+ * Uses Win Rate, Sharpe Ratio, and Volume.
  * 
  * NOTE: This is an MVP implementation using mocked price performance.
  * 
@@ -26,23 +49,36 @@ async function calculateWinRate(userId) {
             return 50;
         }
 
-        let profitableCount = 0;
+        const tradeHistory = [];
+        const volumeScores = [];
 
-        // Mock price performance for each scan
+        // Mock price performance and volume for each scan
         scans.forEach(scan => {
             // Generate a random profit between -10% and +50%
             const mockProfitPercent = (Math.random() * 60) - 10;
+            tradeHistory.push(mockProfitPercent);
 
-            if (mockProfitPercent > 0) {
-                profitableCount++;
-            }
+            // Generate a random volume score (0-100)
+            const mockVolumeScore = Math.floor(Math.random() * 100);
+            volumeScores.push(mockVolumeScore);
         });
 
-        // Calculate win rate
-        const winRate = (profitableCount / scans.length) * 100;
+        // Calculate Win Rate
+        const profitableCount = tradeHistory.filter(p => p > 0).length;
+        const winRate = (profitableCount / tradeHistory.length) * 100;
+
+        // Calculate Sharpe Ratio
+        const sharpe = calculateSharpeRatio(tradeHistory);
+
+        // Calculate Average Volume Score
+        const avgVolume = volumeScores.reduce((a, b) => a + b, 0) / volumeScores.length;
+
+        // Calculate Predictive Score
+        // Formula: (WinRate * 0.4) + (Sharpe * 0.4) + (Volume * 0.2)
+        const predictiveScore = (winRate * 0.4) + (sharpe * 0.4) + (avgVolume * 0.2);
 
         // Return rounded score
-        return Math.round(winRate);
+        return Math.round(predictiveScore);
 
     } catch (error) {
         console.error('Error calculating win rate:', error);

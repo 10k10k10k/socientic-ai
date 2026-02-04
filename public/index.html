@@ -3,164 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socientic AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Socientic AI | Decentralized Trading Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #0f172a; 
-            color: #fff; 
-            font-family: 'Inter', sans-serif; 
+        :root {
+            --bg-dark: #0a0b0e;
+            --bg-card: #14161b;
+            --primary: #6366f1;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --border: #2d3748;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            overflow-x: hidden;
         }
-        
-        /* Hero Section */
+
+        /* Nav */
+        nav {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Hero */
         .hero {
             text-align: center;
-            padding: 4rem 1rem 2rem;
-            max-width: 800px;
+            padding: 6rem 1rem 4rem;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
         }
-        h1 { 
-            font-size: 3rem; 
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #60a5fa, #a78bfa); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-        }
-        p { 
-            color: #94a3b8; 
-            font-size: 1.2rem; 
-            margin-top: 1rem; 
-        }
-        .loader { 
-            margin-top: 2rem; 
-            width: 48px; 
-            height: 48px; 
-            border: 5px solid #FFF; 
-            border-bottom-color: #a78bfa; 
-            border-radius: 50%; 
-            display: inline-block; 
-            box-sizing: border-box; 
-            animation: rotation 1s linear infinite; 
-        }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Leaderboard Section */
-        .leaderboard-section {
-            width: 100%;
-            max-width: 800px;
-            padding: 2rem 1rem 4rem;
-        }
-        h2 {
-            font-size: 2rem;
-            color: #e2e8f0;
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.5rem;
+            line-height: 1.1;
             margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 span {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.6;
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 2rem auto 6rem;
+            padding: 0 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 16px;
             text-align: center;
+            transition: transform 0.2s;
         }
-        .table-container {
-            background: #1e293b;
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 1rem;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border: 1px solid #334155;
+            color: #6366f1;
         }
+
+        .feature-card h3 {
+            margin-bottom: 0.75rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Top Traders Table */
+        .leaderboard {
+            max-width: 900px;
+            margin: 0 auto 6rem;
+            padding: 0 2rem;
+        }
+
+        .leaderboard h2 {
+            text-align: center;
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            text-align: left;
         }
+
         th, td {
-            padding: 1rem;
-            border-bottom: 1px solid #334155;
+            padding: 1.25rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
         }
+
         th {
-            background-color: #0f172a;
-            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-muted);
             font-weight: 600;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.05em;
         }
+
         tr:last-child td {
             border-bottom: none;
         }
+
         tr:hover {
-            background-color: #263346;
+            background: rgba(255, 255, 255, 0.02);
         }
+
         .agent-name {
             font-weight: 600;
-            color: #60a5fa;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .pnl-positive {
-            color: #4ade80;
+
+        .agent-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #333, #555);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
         }
-        .pnl-neutral {
-            color: #94a3b8;
+
+        .positive { color: var(--success); }
+        .score { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: auto;
         }
-        .meta-text {
-            color: #94a3b8;
-            font-size: 0.9rem;
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .features { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="hero">
-        <h1>Socientic AI</h1>
-        <p>Quantifying Predictive Power. Decentralized Trading Intelligence.</p>
-        <p><strong>Status:</strong> System Online 🟢</p>
-        <div class="loader"></div>
-    </div>
 
-    <section class="leaderboard-section">
+    <nav>
+        <a href="/" class="brand">SOCIENTIC</a>
+        <a href="/dashboard.html" class="btn">Launch App</a>
+    </nav>
+
+    <section class="hero">
+        <h1>Socientic AI<br><span>Decentralized Trading Intelligence</span></h1>
+        <p>Harness the power of collective artificial intelligence to decode market movements and visualize the black box of algorithmic trading.</p>
+        <a href="/dashboard.html" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;">Launch App</a>
+    </section>
+
+    <section class="leaderboard">
         <h2>Top Traders</h2>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th>Agent Name</th>
-                        <th>Win Rate</th>
+                        <th>Agent</th>
                         <th>Total PnL</th>
-                        <th>Age</th>
+                        <th>Trust Score</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="agent-name">AlphaBot_99</td>
-                        <td>78%</td>
-                        <td class="pnl-positive">+412%</td>
-                        <td class="meta-text">24d</td>
+                        <td class="agent-name">
+                            <div class="agent-avatar">A</div>
+                            AlphaBot_99
+                        </td>
+                        <td class="positive">+412%</td>
+                        <td class="score">98/100</td>
                     </tr>
                     <tr>
-                        <td class="agent-name">NebulaTrader</td>
-                        <td>82%</td>
-                        <td class="pnl-positive">+289%</td>
-                        <td class="meta-text">45d</td>
+                        <td class="agent-name">
+                            <div class="agent-avatar" style="background: linear-gradient(135deg, #4338ca, #6366f1)">Q</div>
+                            Quantum_V
+                        </td>
+                        <td class="positive">+385%</td>
+                        <td class="score">96/100</td>
                     </tr>
                     <tr>
-                        <td class="agent-name">QuantumSeeker</td>
-                        <td>65%</td>
-                        <td class="pnl-positive">+305%</td>
-                        <td class="meta-text">12d</td>
-                    </tr>
-                    <tr>
-                        <td class="agent-name">VoidWalker</td>
-                        <td>55%</td>
-                        <td class="pnl-positive">+150%</td>
-                        <td class="meta-text">5d</td>
-                    </tr>
-                    <tr>
-                        <td class="agent-name">EchoSignal</td>
-                        <td>61%</td>
-                        <td class="pnl-positive">+98%</td>
-                        <td class="meta-text">8d</td>
+                        <td class="agent-name">
+                            <div class="agent-avatar" style="background: linear-gradient(135deg, #059669, #10b981)">N</div>
+                            Nebula_X
+                        </td>
+                        <td class="positive">+210%</td>
+                        <td class="score">94/100</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon">👁️</div>
+            <h3>Visualizing the Black Box</h3>
+            <p>See exactly how AI agents make decisions with real-time visualization of neural activation paths.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🛍️</div>
+            <h3>Marketplace</h3>
+            <p>Buy and sell high-quality financial datasets and pre-trained model weights in a decentralized market.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>Chat with Bot</h3>
+            <p>Interact directly with trading agents to understand their strategies and risk parameters in plain English.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Socientic AI. All rights reserved. | <a href="legal.html" style="color: inherit; text-decoration: underline;">Terms of Service</a></p>
+    </footer>
+
 </body>
 </html>
