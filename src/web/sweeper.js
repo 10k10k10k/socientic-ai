@@ -1,4 +1,4 @@
-const db = require('../db');
+const supabase = require('../db');
 
 const ADMIN_SOL_WALLET = 'Fuotq...'; // Placeholder as per instructions
 
@@ -16,13 +16,17 @@ async function sweepFunds() {
     let totalSwept = 0;
     let totalFees = 0;
 
-    // Ensure mock users exist in the users table to satisfy Foreign Key constraints
-    const insertUserStmt = db.prepare(`
-        INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)
-    `);
-
     for (const wallet of MOCKED_DEPOSIT_WALLETS) {
-        insertUserStmt.run(wallet.userId, `user_${wallet.userId}`);
+        // Ensure mock users exist in the users table
+        const { error: userError } = await supabase.from('users').upsert({
+            telegram_id: wallet.userId,
+            username: `user_${wallet.userId}`
+        }, { onConflict: 'telegram_id' });
+
+        if (userError) {
+            console.error(`[ERROR] Failed to upsert user ${wallet.userId}:`, userError.message);
+            continue;
+        }
         
         if (wallet.balanceUSDC <= 0) continue;
 
@@ -37,17 +41,36 @@ async function sweepFunds() {
         console.log(`[FEE] 1% Fee Taken: ${fee.toFixed(2)} USDC from User ${wallet.userId}`);
 
         // 3. Update Internal Ledger (Credit Virtual Balance)
+        // We need to fetch current balance first or use an RPC if we want atomic increment, 
+        // but for now we'll do read-modify-write as Supabase simple update doesn't support increment easily without RPC
+        
+        // Let's try to find if we can use a custom RPC or just upsert.
+        // Since we don't have an increment RPC, we'll read first.
+        
         try {
-            const stmt = db.prepare(`
-                INSERT INTO ledger (user_id, virtual_balance, last_updated)
-                VALUES (?, ?, strftime('%s', 'now'))
-                ON CONFLICT(user_id) DO UPDATE SET
-                    virtual_balance = virtual_balance + ?,
-                    last_updated = strftime('%s', 'now')
-            `);
+            const { data: ledgerEntry, error: fetchError } = await supabase
+                .from('ledger')
+                .select('virtual_balance')
+                .eq('user_id', wallet.userId)
+                .single();
             
-            stmt.run(wallet.userId, netAmount, netAmount);
-            console.log(`[LEDGER] Credited ${netAmount.toFixed(2)} USDC to User ${wallet.userId} Virtual Balance`);
+            let currentBalance = 0;
+            if (ledgerEntry) {
+                currentBalance = ledgerEntry.virtual_balance;
+            }
+
+            const newBalance = currentBalance + netAmount;
+            const timestamp = Math.floor(Date.now() / 1000);
+
+            const { error: upsertError } = await supabase.from('ledger').upsert({
+                user_id: wallet.userId,
+                virtual_balance: newBalance,
+                last_updated: timestamp
+            });
+
+            if (upsertError) throw upsertError;
+            
+            console.log(`[LEDGER] Credited ${netAmount.toFixed(2)} USDC to User ${wallet.userId} Virtual Balance (New: ${newBalance})`);
             
             totalSwept += amount;
             totalFees += fee;
