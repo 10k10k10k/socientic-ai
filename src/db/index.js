@@ -42,6 +42,13 @@ function init() {
             FOREIGN KEY (user_id) REFERENCES users(telegram_id),
             FOREIGN KEY (group_id) REFERENCES groups(telegram_id)
         );
+
+        CREATE TABLE IF NOT EXISTS ledger (
+            user_id TEXT PRIMARY KEY,
+            virtual_balance REAL DEFAULT 0,
+            last_updated INTEGER DEFAULT (strftime('%s', 'now')),
+            FOREIGN KEY (user_id) REFERENCES users(telegram_id)
+        );
     `;
     
     db.exec(initScript);
