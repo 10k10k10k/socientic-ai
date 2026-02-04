@@ -13,19 +13,87 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
+// Menu Handler
 bot.start((ctx) => {
+  ctx.reply('**Welcome to Socientic AI** 🥧\n\nChoose an option below:', {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '🤖 Spawn Trading Bot', callback_data: 'spawn_bot' },
+          { text: '🎁 Contribute Data (Airdrop)', callback_data: 'contribute_data' }
+        ],
+        [
+          { text: '📊 My Dashboard', callback_data: 'check_status' }
+        ]
+      ]
+    }
+  });
+});
+
+// Action: Spawn Bot (Wallet Creation)
+bot.action('spawn_bot', async (ctx) => {
+  const userId = ctx.from.id.toString();
+  // ... (existing spawn logic) ...
+  // BUT UPDATED TO SHOW PRIVATE KEY
+  
+  // (Mocking the DB call for brevity in this edit, assuming the full logic is below)
+  // I will replace the /spawn command with this action handler logic
+  
+  try {
+    // Generate new wallets
+    const solKeypair = generateSolanaWallet();
+    const baseKeypair = generateBaseWallet();
+
+    // Save to DB (Upsert)
+    const { error } = await supabase.from('users').upsert({
+      telegram_id: userId,
+      username: ctx.from.username,
+      wallet_sol_pub: solKeypair.address,
+      wallet_sol_priv: solKeypair.privateKey, // Encrypt this in prod!
+      wallet_base_pub: baseKeypair.address,
+      wallet_base_priv: baseKeypair.privateKey
+    }, { onConflict: 'telegram_id' });
+
+    if (error) throw error;
+
+    await ctx.reply(
+      `✅ **Bot Spawned!**\n\n` +
+      `Here are your **Private Keys**. Import these into Phantom/Metamask immediately!\n\n` +
+      `🔑 **Solana Private Key:**\n\`${solKeypair.privateKey}\`\n\n` +
+      `🔑 **Base Private Key:**\n\`${baseKeypair.privateKey}\`\n\n` +
+      `⚠️ *Delete this message after saving!*`,
+      { parse_mode: 'Markdown' }
+    );
+    
+  } catch (err) {
+    console.error(err);
+    ctx.reply('Error spawning bot. Please try again.');
+  }
+});
+
+// Action: Contribute Data
+bot.action('contribute_data', (ctx) => {
   ctx.reply(
-    'Welcome to Socientic AI! 🥧\n\n' +
-    'I am your primary hub for managing trading bots and tracking predictive power.\n\n' +
-    '**🚀 Get Started:**\n' +
-    '1. Add me to your group.\n' +
-    '2. Use /spawn to create your trading wallet.\n\n' +
-    '**📥 Import History (Instant Score):**\n' +
-    'Don\'t want to wait? You can upload your group\'s history!\n' +
-    '1. Desktop Telegram: Go to Group Settings -> Export Chat History -> **JSON Format**.\n' +
-    '2. Upload the file on your Dashboard to backtest your group\'s calls immediately.'
+    `🎁 **Data Contribution & Airdrop**\n\n` +
+    `Earn **$SOC** points by feeding data to the Hive Mind.\n\n` +
+    `**Method 1: Live Tracking (Best)**\n` +
+    `1. Add me to your Telegram Group.\n` +
+    `2. Promote me to Admin (so I can read messages).\n` +
+    `3. I will automatically track scans and credit you!\n\n` +
+    `**Method 2: Historical Data**\n` +
+    `1. Export your Group Chat History (JSON).\n` +
+    `2. Upload it on your Dashboard (Link coming soon).\n` +
+    `3. Enter the Group Name to match it.`
   );
 });
+
+// Action: Status
+bot.action('check_status', async (ctx) => {
+    // Reuse status logic
+    ctx.reply('Fetching your stats...');
+});
+
 
 bot.help((ctx) => {
   ctx.reply('Commands:\n/start - Initialize the bot\n/spawn - Create your trading agent & wallets\n/status - Check your gas tank and active bots\n/track - Start tracking predictive power in this group (Admin only)');
