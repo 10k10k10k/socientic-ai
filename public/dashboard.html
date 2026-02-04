@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Phantom Provider -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <style>
         :root {
             --bg-dark: #0a0b0e;
@@ -204,11 +206,53 @@
             align-items: center;
             z-index: 50;
         }
+
+        /* Toggle Switch */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 50px;
+          height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #2d3748;
+          transition: .4s;
+          border-radius: 34px;
+        }
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 16px;
+          width: 16px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #6366f1; }
+        input:checked + .slider:before { transform: translateX(26px); }
         
         #dashboard-content {
             position: relative;
             min-height: 400px;
         }
+        
+        .data-source-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-source-item:last-child { border-bottom: none; }
 
     </style>
 </head>
@@ -218,7 +262,7 @@
         <div class="brand" onclick="window.location.href='/'">SOCIENTIC</div>
         <div style="display: flex; gap: 1rem; align-items: center;">
             <div id="telegram-login-container"></div>
-            <button id="connect-wallet" class="btn hidden">Connect Wallet</button>
+            <button id="connect-wallet" class="btn hidden">Connect Phantom</button>
         </div>
         <div id="wallet-display" class="hidden">
             <span id="user-display" style="margin-right: 1rem; font-family: monospace; color: var(--text-muted);"></span>
@@ -269,6 +313,44 @@
                         <div class="stat-value" id="win-rate">--%</div>
                         <div class="stat-sub" id="predictive-score">Score: --/100</div>
                     </div>
+                    
+                    <!-- Data Sources Toggle Section -->
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <h3>Active Data Sources</h3>
+                        <div id="data-sources-list">
+                            <div class="data-source-item">
+                                <div>
+                                    <div style="font-weight: 600;">Telegram Groups (Alpha)</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Sentiment analysis from 50+ crypto groups</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" checked onchange="toggleDataSource('telegram_groups')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="data-source-item">
+                                <div>
+                                    <div style="font-weight: 600;">On-Chain Whale Watch</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Real-time tracking of >$1M movements</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" checked onchange="toggleDataSource('whale_watch')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="data-source-item">
+                                <div>
+                                    <div style="font-weight: 600;">Twitter/X Sentiment</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Viral ticker detection</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" onchange="toggleDataSource('twitter_sentiment')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card" style="grid-column: 1 / -1;">
                         <h3>Recent Trades</h3>
                         <ul class="trade-list" id="recent-trades">
@@ -296,6 +378,12 @@
     </div>
 
     <script>
+        // Data Source Toggle Handler
+        function toggleDataSource(sourceId) {
+            console.log(`Toggling data source: ${sourceId}`);
+            // Logic to update backend would go here
+        }
+
         // Telegram Auth Callback
         function onTelegramAuth(user) {
             console.log('Telegram User:', user);
@@ -305,16 +393,25 @@
             fetchUserStats(user.id); 
         }
 
-        // Wallet Logic
+        // Phantom Wallet Logic
         async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
+            // Check for Solana/Phantom
+            const isPhantomInstalled = window.solana && window.solana.isPhantom;
+            
+            if (isPhantomInstalled) {
                 try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    unlockDashboard(accounts[0]);
-                } catch (error) { alert("Connection failed"); }
+                    const resp = await window.solana.connect();
+                    const pubKey = resp.publicKey.toString();
+                    console.log("Connected to Phantom:", pubKey);
+                    unlockDashboard(pubKey);
+                    fetchUserStats(pubKey);
+                } catch (err) {
+                    console.error("User rejected connection", err);
+                    alert("Connection rejected by user");
+                }
             } else {
-                // Mock for testing
-                unlockDashboard("0xMockWallet...1234");
+                alert("Phantom wallet not found. Please install the extension.");
+                window.open("https://phantom.app/", "_blank");
             }
         }
 
@@ -352,7 +449,10 @@
             `;
         }
 
-        document.getElementById('disconnect-btn').addEventListener('click', () => location.reload());
+        document.getElementById('disconnect-btn').addEventListener('click', () => {
+             if (window.solana) window.solana.disconnect();
+             location.reload();
+        });
     </script>
 </body>
 </html>
