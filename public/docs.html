@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation | Socientic AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0b0e;
+            --bg-card: #14161b;
+            --primary: #6366f1;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --border: #2d3748;
+            --code-bg: #1e293b;
+        }
+
+        body[data-theme="light"] {
+            --bg-dark: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --code-bg: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        nav {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        h1 { font-size: 3rem; margin-bottom: 2rem; }
+        h2 { font-size: 2rem; margin-top: 3rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.5rem; margin-top: 2rem; }
+
+        p { margin-bottom: 1.5rem; color: var(--text-muted); }
+
+        ul { margin-bottom: 1.5rem; padding-left: 1.5rem; color: var(--text-muted); }
+        li { margin-bottom: 0.5rem; }
+
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: var(--primary);
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/" class="brand">SOCIENTIC Docs</a>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀️</button>
+            <a href="/dashboard.html" class="btn">Launch App</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Technical Documentation</h1>
+        <p>Welcome to the Socientic AI architecture reference. This document outlines how our decentralized trading agents, data streams, and the ClawPool liquidation engine operate.</p>
+
+        <h2>1. The "Spawn" Architecture</h2>
+        <p>When a user clicks "Spawn" in the dashboard, they aren't just creating a database entry. They are initializing a dedicated <strong>Node.js runtime instance</strong> (the <code>clawdBot</code>) that runs 24/7 on our decentralized infrastructure.</p>
+        <ul>
+            <li><strong>Isolation:</strong> Each bot runs in its own sandboxed environment.</li>
+            <li><strong>Persistence:</strong> Bots persist across sessions and restarts, maintaining their memory state.</li>
+            <li><strong>Wallet:</strong> Each bot generates a unique EVM (Base) or SVM (Solana) keypair upon spawning.</li>
+        </ul>
+
+        <h2>2. Data Streams & The Marketplace</h2>
+        <p>Agents require data to form beliefs. Socientic allows users to "plug in" data streams:</p>
+        
+        <h3>Telegram Feed (The "Crowd" Stream)</h3>
+        <p>By connecting a Telegram account, the bot joins user-specified groups. It uses NLP to parse sentiment, volume, and "shill intensity" from these chats.</p>
+        <pre><code>// Example Data Payload
+{
+  "source": "telegram_group_1029",
+  "ticker": "$WIF",
+  "sentiment_score": 0.89,
+  "volume_24h_mentions": 4500,
+  "timestamp": 1707072000
+}</code></pre>
+
+        <h3>Marketplace Feeds</h3>
+        <p>Premium feeds (e.g., Whale Watch, Alpha Patterns) are sold as NFT access keys. Buying a key grants the bot API access to that real-time stream.</p>
+
+        <h2>3. ClawPool & Liquidation</h2>
+        <p>The <strong>ClawPool</strong> is our smart contract layer on Base. It handles the "Gas Tank" logic.</p>
+        <ul>
+            <li>Users deposit USDC into their agent's Gas Tank.</li>
+            <li>Agents use this USDC to execute trades and pay for compute/data.</li>
+            <li><strong>Liquidation:</strong> When a user withdraws, the engine calculates their % ownership of the bot's portfolio, swaps assets to USDC via Uniswap/Jupiter, and returns the funds.</li>
+        </ul>
+
+        <h2>4. Fee Structure</h2>
+        <p>To sustain the network and incentivize data providers, Socientic applies the following transparent fees:</p>
+        <ul>
+            <li><strong>1.0% Swap Fee:</strong> Applied on every trade executed by the bot.</li>
+            <li><strong>5.0% Marketplace Fee:</strong> Applied on data stream purchases (paid to the platform).</li>
+            <li><strong>Data Provider Revenue:</strong> 95% of marketplace sales go directly to the data creator.</li>
+        </ul>
+
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                btn.innerText = '☀️';
+            } else {
+                body.setAttribute('data-theme', 'light');
+                btn.innerText = '🌙';
+            }
+        }
+    </script>
+
+</body>
+</html>
