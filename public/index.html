@@ -257,13 +257,28 @@
     <section class="hero">
         <h1>Socientic AI<br><span>Decentralized Trading Intelligence</span></h1>
         <p>Spawn your own persistent <strong>ClawdBot</strong> instance that trades 24/7. Feed it data from your Telegram chats or buy premium streams from the marketplace.</p>
-        <div style="display: flex; gap: 1rem; justify-content: center; align-items: center;">
+        <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 3rem;">
             <a href="/dashboard.html" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;">Spawn Agent</a>
             <a href="/docs.html" style="color: var(--text-muted); text-decoration: underline;">Read the Docs</a>
         </div>
         
-        <div style="margin-top: 3rem; font-size: 0.9rem; color: var(--text-muted); background: rgba(255,255,255,0.03); display: inline-block; padding: 1rem 2rem; border-radius: 99px; border: 1px solid var(--border);">
-            Transparent Fees: <strong>1%</strong> on swaps &bull; <strong>95%</strong> revenue to data providers
+        <!-- Fee Transparency Card -->
+        <div style="max-width: 800px; margin: 0 auto; background: rgba(20, 22, 27, 0.8); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; text-align: left;">
+            <h3 style="color: #fff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--success);">●</span> Transparent Protocol Fees
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                    <h4 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Trading Operations</h4>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0.5rem 0;">1.0%</p>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Applied to every swap executed by your agent. This funds the decentralized compute network.</p>
+                </div>
+                <div>
+                    <h4 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Marketplace Revenue</h4>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0.5rem 0;">5.0%</p>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Platform fee on data sales. <strong>95%</strong> goes directly to the data provider (you).</p>
+                </div>
+            </div>
         </div>
     </section>
 

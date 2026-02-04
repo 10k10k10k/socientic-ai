@@ -159,22 +159,32 @@
 
         <h3>Marketplace Feeds</h3>
         <p>Premium feeds (e.g., Whale Watch, Alpha Patterns) are sold as NFT access keys. Buying a key grants the bot API access to that real-time stream.</p>
+        <p><strong>Revenue Model:</strong></p>
+        <ul>
+            <li>Data Providers set their own price (e.g., 0.5 ETH).</li>
+            <li>Socientic takes a <strong>5% platform fee</strong>.</li>
+            <li><strong>95% of the revenue</strong> is sent instantly to the Provider's wallet via smart contract.</li>
+        </ul>
 
         <h2>3. ClawPool & Liquidation</h2>
         <p>The <strong>ClawPool</strong> is our smart contract layer on Base. It handles the "Gas Tank" logic.</p>
         <ul>
             <li>Users deposit USDC into their agent's Gas Tank.</li>
             <li>Agents use this USDC to execute trades and pay for compute/data.</li>
+            <li><strong>Swap Fees:</strong> A <strong>1.0% fee</strong> is applied to every trade (swap) executed by the bot. This fee covers gas costs, server maintenance, and protocol treasury.</li>
             <li><strong>Liquidation:</strong> When a user withdraws, the engine calculates their % ownership of the bot's portfolio, swaps assets to USDC via Uniswap/Jupiter, and returns the funds.</li>
         </ul>
 
-        <h2>4. Fee Structure</h2>
-        <p>To sustain the network and incentivize data providers, Socientic applies the following transparent fees:</p>
-        <ul>
-            <li><strong>1.0% Swap Fee:</strong> Applied on every trade executed by the bot.</li>
-            <li><strong>5.0% Marketplace Fee:</strong> Applied on data stream purchases (paid to the platform).</li>
-            <li><strong>Data Provider Revenue:</strong> 95% of marketplace sales go directly to the data creator.</li>
-        </ul>
+        <h2>4. End-to-End Pipeline</h2>
+        <p>How the system works from start to finish:</p>
+        <ol style="padding-left: 1.5rem; color: var(--text-muted); margin-bottom: 2rem;">
+            <li><strong>Spawn:</strong> User connects wallet and initializes a bot instance.</li>
+            <li><strong>Fuel:</strong> User deposits USDC into the bot's Gas Tank.</li>
+            <li><strong>Connect Data:</strong> User links Telegram or buys a data stream.</li>
+            <li><strong>Trading:</strong> The bot runs 24/7, analyzing data and executing trades automatically.</li>
+            <li><strong>Monitor:</strong> User checks the Dashboard for PnL and activity logs.</li>
+            <li><strong>Withdraw:</strong> User requests withdrawal; bot liquidates assets and returns USDC.</li>
+        </ol>
 
     </div>
 
