@@ -4,6 +4,7 @@ const supabase = require('../db');
 const { generateSolanaWallet, generateBaseWallet } = require('../utils/wallets');
 const PaperTrader = require('../models/paper_trader');
 const { getTokenData } = require('../utils/onchain');
+const { checkSubscription } = require('../web/billing');
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -66,7 +67,7 @@ bot.action('fund_wallets', async (ctx) => {
   let msg = `💰 **Funding Wallets**\n\n`;
   if (user.wallet_sol_pub) msg += `🟣 **Solana:**\n\`${user.wallet_sol_pub}\`\n\n`;
   if (user.wallet_base_pub) msg += `🔵 **Base:**\n\`${user.wallet_base_pub}\`\n\n`;
-  msg += `Send funds to start trading.`;
+  msg += `\n**Required:** $50 USDC (Hosting) + SOL/ETH (Trading Capital).`;
 
   ctx.reply(msg, { parse_mode: 'Markdown' });
 });
@@ -78,9 +79,8 @@ bot.action('give_opinion', (ctx) => {
 
 // Action: View Feeds (Mock)
 bot.action('view_feeds', (ctx) => {
-  ctx.reply('📡 **Active Data Feeds**\n\n• Group: AlphaCallers (Live)\n• Group: GemHunters (Live)\n\n*Go to Dashboard to add more.*');
+  ctx.reply('📡 **Active Data Feeds**\n\n• Group: AlphaCallers (Live)\n• Group: GemHunters (Live)\n\n*Go to Dashboard to add more.*', { parse_mode: 'Markdown' });
 });
-
 
 // Action: Spawn Bot (Selection)
 bot.action('spawn_bot', (ctx) => {
@@ -123,13 +123,21 @@ async function handleWalletCreation(ctx, preferredNetwork) {
   // Display ONLY the preferred one (focus), but mention the other exists
   const mainWallet = preferredNetwork === 'SOL' ? solKeypair.address : baseKeypair.address;
   const mainPriv = preferredNetwork === 'SOL' ? solKeypair.privateKey : baseKeypair.privateKey;
+  const nativeToken = preferredNetwork === 'SOL' ? 'SOL' : 'ETH';
   
   ctx.reply(
     `✅ **Agent Initialized (${preferredNetwork})**\n\n` +
     `**Public Address:** \`${mainWallet}\`\n\n` +
     `**🔑 Private Key (SAVE NOW):**\n\`${mainPriv}\`\n\n` +
     `_Hidden: A ${preferredNetwork === 'SOL' ? 'Base' : 'Solana'} wallet was also created for you. Check /status to reveal it._\n\n` +
-    `**Next:** Fund this wallet with **${preferredNetwork === 'SOL' ? 'SOL' : 'ETH'}** + **USDC** to start.`,
+    `**⚠️ REQUIRED FUNDING:**\n` +
+    `• **Minimum Deposit:** $50 USDC\n` +
+    `  _($39/mo Hosting via SimpleClaw + $11 Gas/API Credit)_\n` +
+    `• **Trading Capital:** Send any amount of **${nativeToken}** to trade.\n\n` +
+    `**Auto-Pay:** Profits will automatically refill your Gas Tank for next month's hosting.\n\n` +
+    `**Next Steps:**\n` +
+    `• Add me to your Group Chat to feed me data.\n` +
+    `• OR Go to the Dashboard to search for existing groups to opt-in.`,
     { parse_mode: 'Markdown' }
   );
 }
@@ -149,7 +157,8 @@ bot.action('contribute_data', (ctx) => {
     `**Method 2: Historical Data**\n` +
     `1. Export your Group Chat History (JSON).\n` +
     `2. Upload it on your Dashboard (Link coming soon).\n` +
-    `3. Enter the Group Name to match it.`
+    `3. Enter the Group Name to match it.`,
+    { parse_mode: 'Markdown' }
   );
 });
 
@@ -312,6 +321,21 @@ setInterval(() => {
     };
     PaperTrader.checkOpenTrades(notifyAdmin);
 }, 60000);
+
+// Billing Check Loop (Daily)
+setInterval(async () => {
+    console.log('[Billing] Starting daily subscription check...');
+    const { data: users, error } = await supabase.from('users').select('telegram_id');
+    if (users) {
+        for (const user of users) {
+            await checkSubscription(user.telegram_id);
+            // Add delay to avoid rate limits
+            await new Promise(r => setTimeout(r, 2000));
+        }
+    } else if (error) {
+        console.error('[Billing] Error fetching users:', error);
+    }
+}, 24 * 60 * 60 * 1000); // 24 hours
 
 bot.launch().then(() => {
   console.log('Socientic AI Bot is live!');
