@@ -2,6 +2,8 @@ const { Telegraf } = require('telegraf');
 require('dotenv').config();
 const supabase = require('../db');
 const { generateSolanaWallet, generateBaseWallet } = require('../utils/wallets');
+const PaperTrader = require('../models/paper_trader');
+const { getTokenData } = require('../utils/onchain');
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -31,46 +33,86 @@ bot.start((ctx) => {
   });
 });
 
-// Action: Spawn Bot (Wallet Creation)
-bot.action('spawn_bot', async (ctx) => {
-  const userId = ctx.from.id.toString();
-  // ... (existing spawn logic) ...
-  // BUT UPDATED TO SHOW PRIVATE KEY
-  
-  // (Mocking the DB call for brevity in this edit, assuming the full logic is below)
-  // I will replace the /spawn command with this action handler logic
-  
-  try {
-    // Generate new wallets
-    const solKeypair = generateSolanaWallet();
-    const baseKeypair = generateBaseWallet();
-
-    // Save to DB (Upsert)
-    const { error } = await supabase.from('users').upsert({
-      telegram_id: userId,
-      username: ctx.from.username,
-      wallet_sol_pub: solKeypair.address,
-      wallet_sol_priv: solKeypair.privateKey, // Encrypt this in prod!
-      wallet_base_pub: baseKeypair.address,
-      wallet_base_priv: baseKeypair.privateKey
-    }, { onConflict: 'telegram_id' });
-
-    if (error) throw error;
-
-    await ctx.reply(
-      `✅ **Bot Spawned!**\n\n` +
-      `Here are your **Private Keys**. Import these into Phantom/Metamask immediately!\n\n` +
-      `🔑 **Solana Private Key:**\n\`${solKeypair.privateKey}\`\n\n` +
-      `🔑 **Base Private Key:**\n\`${baseKeypair.privateKey}\`\n\n` +
-      `⚠️ *Delete this message after saving!*`,
-      { parse_mode: 'Markdown' }
-    );
-    
-  } catch (err) {
-    console.error(err);
-    ctx.reply('Error spawning bot. Please try again.');
-  }
+// Action: Spawn Bot (Selection)
+bot.action('spawn_bot', (ctx) => {
+  ctx.reply('Select your trading network:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🟣 Solana (SOL)', callback_data: 'spawn_sol' }],
+        [{ text: '🔵 Base (ETH)', callback_data: 'spawn_base' }]
+      ]
+    }
+  });
 });
+
+// Action: Create Wallet
+async function handleWalletCreation(ctx, network) {
+  const userId = ctx.from.id.toString();
+  
+  // Check existing
+  const { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+  
+  if (user && (network === 'SOL' ? user.wallet_sol_pub : user.wallet_base_pub)) {
+    return ctx.reply(`You already have a ${network} agent wallet!\nAddress: \`${network === 'SOL' ? user.wallet_sol_pub : user.wallet_base_pub}\``, { parse_mode: 'Markdown' });
+  }
+
+  let wallet, privKey;
+  if (network === 'SOL') {
+    const keypair = generateSolanaWallet();
+    wallet = keypair.address;
+    privKey = keypair.privateKey;
+    await supabase.from('users').upsert({ telegram_id: userId, wallet_sol_pub: wallet, wallet_sol_priv: privKey }, { onConflict: 'telegram_id' });
+  } else {
+    const keypair = generateBaseWallet();
+    wallet = keypair.address;
+    privKey = keypair.privateKey;
+    await supabase.from('users').upsert({ telegram_id: userId, wallet_base_pub: wallet, wallet_base_priv: privKey }, { onConflict: 'telegram_id' });
+  }
+
+  const nativeToken = network === 'SOL' ? 'SOL' : 'ETH';
+  
+  ctx.reply(
+    `✅ **${network} Agent Created!**\n\n` +
+    `**Your Wallet:**\n\`${wallet}\`\n\n` +
+    `**⚠️ REQUIRED FUNDING:**\n` +
+    `1. Send **${nativeToken}** (Trading Capital + Gas)\n` +
+    `2. Send **USDC** (To pay for AI Compute/API Fees)\n\n` +
+    `**Next Steps:**\n` +
+    `• Add me to your Group Chat to feed me data.\n` +
+    `• OR Go to the Dashboard to search for existing groups to opt-in.\n` +
+    `• You can chat with me here anytime!`,
+    { parse_mode: 'Markdown' }
+  );
+}
+
+bot.action('spawn_sol', (ctx) => handleWalletCreation(ctx, 'SOL'));
+bot.action('spawn_base', (ctx) => handleWalletCreation(ctx, 'BASE'));
+
+// General Chat Handler (Conversational Data)
+bot.on('text', async (ctx) => {
+  // If it's a command, ignore
+  if (ctx.message.text.startsWith('/')) return;
+
+  // If it's a DM, treat as conversational feedback
+  if (ctx.chat.type === 'private') {
+    const text = ctx.message.text;
+    console.log(`[Conversation] User ${ctx.from.username}: ${text}`);
+    
+    // Save to DB
+    await supabase.from('conversations').insert({
+      user_id: ctx.from.id.toString(),
+      message: text,
+      context: 'dm_feedback'
+    });
+
+    // Simple acknowledgment (Mock AI)
+    ctx.reply('Message received. I am analyzing this input for future trading decisions. 🧠');
+    return;
+  }
+
+  // If Group, run the Scan Logic (Existing code)
+  // ...
+
 
 // Action: Contribute Data
 bot.action('contribute_data', (ctx) => {
@@ -260,12 +302,30 @@ bot.on('text', async (ctx) => {
       const scansToInsert = [];
 
       for (const ca of cas) {
+        let mcap = null;
+        let liquidity = null;
+        let pairAge = null;
+
+        try {
+          const tokenData = await getTokenData(ca);
+          if (tokenData) {
+            mcap = tokenData.mcap;
+            liquidity = tokenData.liquidity;
+            pairAge = tokenData.pair_age;
+          }
+        } catch (err) {
+          console.error(`Failed to enrich token data for ${ca}:`, err);
+        }
+
         scansToInsert.push({
           user_id: userId,
           group_id: groupId,
           ticker: null,
           ca: ca,
-          timestamp: timestamp
+          timestamp: timestamp,
+          mcap: mcap,
+          liquidity: liquidity,
+          pair_age: pairAge
         });
       }
 
@@ -285,6 +345,24 @@ bot.on('text', async (ctx) => {
           console.error('Error inserting scans:', scanError);
         } else {
           console.log(`Saved ${scansToInsert.length} scans to database.`);
+
+          // --- Paper Trader Trigger ---
+          const notifyAdmin = async (msg) => {
+            try {
+                // Find @alpham3o
+                const { data: user } = await supabase.from('users').select('telegram_id').eq('username', 'alpham3o').single();
+                if (user && user.telegram_id) {
+                    bot.telegram.sendMessage(user.telegram_id, msg).catch(e => console.error('Failed to send DM:', e));
+                } else {
+                    console.log('Paper Trader Alert (Admin not found):', msg);
+                }
+            } catch (e) { console.error('Notify Error:', e); }
+          };
+
+          for (const scan of scansToInsert) {
+              PaperTrader.processScan(scan, notifyAdmin);
+          }
+          // ---------------------------
         }
       }
 
@@ -293,6 +371,21 @@ bot.on('text', async (ctx) => {
     }
   }
 });
+
+// Paper Trader: Periodic Sell Check (Every 60s)
+setInterval(() => {
+    const notifyAdmin = async (msg) => {
+        try {
+            const { data: user } = await supabase.from('users').select('telegram_id').eq('username', 'alpham3o').single();
+            if (user && user.telegram_id) {
+                bot.telegram.sendMessage(user.telegram_id, msg).catch(e => console.error('Failed to send DM:', e));
+            } else {
+                console.log('Paper Trader Sell Alert:', msg);
+            }
+        } catch (e) { console.error('Notify Error:', e); }
+    };
+    PaperTrader.checkOpenTrades(notifyAdmin);
+}, 60000);
 
 bot.launch().then(() => {
   console.log('Socientic AI Bot is live!');

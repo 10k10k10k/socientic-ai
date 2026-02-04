@@ -50,6 +50,26 @@ async function calculateWinRate(userId) {
     }
 }
 
+/**
+ * Scores a specific signal/ticker to decide whether to trade.
+ * 
+ * @param {string} ticker - The ticker symbol (e.g. $SOL).
+ * @param {string} ca - The contract address (optional).
+ * @returns {number} - The score (0-100).
+ */
+function scoreSignal(ticker, ca) {
+    // Mock logic: 
+    // - If ticker is $SOL or $BTC, High Confidence (85-95)
+    // - Otherwise, random score (40-90)
+    
+    if (ticker === '$SOL' || ticker === '$BTC' || ticker === '$ETH') {
+        return 85 + Math.floor(Math.random() * 10);
+    }
+    
+    return 40 + Math.floor(Math.random() * 50);
+}
+
 module.exports = {
-    calculateWinRate
+    calculateWinRate,
+    scoreSignal
 };

@@ -8,7 +8,7 @@ function generateSolanaWallet() {
   const keypair = Keypair.generate();
   return {
     address: keypair.publicKey.toBase58(),
-    privateKey: bs58.encode(keypair.secretKey)
+    privateKey: bs58.default.encode(keypair.secretKey)
   };
 }
 
