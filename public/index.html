@@ -35,6 +35,18 @@
             overflow-x: hidden;
         }
 
+        /* Neural Network Animation Background */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
         /* Nav */
         nav {
             padding: 1.5rem 2rem;
@@ -110,6 +122,38 @@
             max-width: 600px;
             margin: 0 auto 2.5rem;
             line-height: 1.6;
+        }
+
+        /* How it Works / Safety */
+        .how-it-works {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .step-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: rgba(99, 102, 241, 0.2);
+            line-height: 1;
+            margin-bottom: 1rem;
         }
 
         /* Features */
@@ -246,6 +290,8 @@
 </head>
 <body>
 
+    <canvas id="canvas-bg"></canvas>
+
     <nav>
         <a href="/" class="brand">SOCIENTIC</a>
         <div style="display: flex; gap: 1.5rem; align-items: center;">
@@ -278,6 +324,29 @@
                     <p style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0.5rem 0;">5.0%</p>
                     <p style="font-size: 0.9rem; color: var(--text-muted);">Platform fee on data sales. <strong>95%</strong> goes directly to the data provider (you).</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; margin-bottom: 1rem;">Powered by USDC Gas Tank</h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 700px; margin: 0 auto;">Your agent runs on a decentralized fuel system. No subscriptions, just gas.</p>
+        
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <h3>Deposit USDC</h3>
+                <p style="color: var(--text-muted);">Top up your agent's Gas Tank via Base or Solana. This pool pays for API calls, compute, and trade execution.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">02</div>
+                <h3>24/7 Autonomy</h3>
+                <p style="color: var(--text-muted);">Your ClawdBot instance spawns and runs continuously, monitoring signals even while you sleep.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">03</div>
+                <h3>Safe & Flexible</h3>
+                <p style="color: var(--text-muted);">Funds are held in a non-custodial smart contract. <strong>Withdraw 100% of your liquidity at any time</strong> with one click.</p>
             </div>
         </div>
     </section>
@@ -344,6 +413,68 @@
     <footer>
         <p>&copy; 2026 Socientic AI. All rights reserved. | <a href="legal.html" style="color: inherit; text-decoration: underline;">Terms of Service</a></p>
     </footer>
+
+    <script>
+        // Simple Neural Network Animation
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let nodes = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        class Node {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+                ctx.fill();
+            }
+        }
+
+        function init() {
+            resize();
+            for (let i = 0; i < 50; i++) nodes.push(new Node());
+            animate();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            nodes.forEach(node => {
+                node.update();
+                node.draw();
+                nodes.forEach(other => {
+                    const dist = Math.hypot(node.x - other.x, node.y - other.y);
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(other.x, other.y);
+                        ctx.strokeStyle = `rgba(99, 102, 241, ${1 - dist / 150})`;
+                        ctx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        init();
+    </script>
 
 </body>
 </html>

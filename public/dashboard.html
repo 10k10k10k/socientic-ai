@@ -274,6 +274,7 @@
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('my-agent')">My Agent</div>
+            <div class="tab" onclick="switchTab('top-agents')">Top Agents</div>
             <div class="tab" onclick="switchTab('marketplace')">Marketplace</div>
         </div>
 
@@ -322,6 +323,21 @@
                         <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem;">
                             <strong style="color: #fff;">Telegram Connected:</strong> <span id="tg-status-text" style="color: var(--success);">Monitoring 3 chats</span>
                         </div>
+                        
+                        <!-- Opt-in for Group Members Feature -->
+                        <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Group Member Opt-in</h4>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted);">Allow members of your connected groups to access your data stream for free/discount.</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" onchange="toggleGroupOptIn(this)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div id="data-sources-list">
                             <div class="data-source-item">
                                 <div>
@@ -361,6 +377,52 @@
                         <ul class="trade-list" id="recent-trades">
                             <li class="trade-item"><span style="color: var(--text-muted)">Loading trades...</span></li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOP AGENTS VIEW -->
+            <div id="view-top-agents" class="hidden">
+                <h2 style="margin-bottom: 1.5rem;">Top Performing Agents</h2>
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #6366f1; display: flex; align-items: center; justify-content: center; font-weight: 700;">A</div>
+                            <div>
+                                <h3 style="margin: 0; color: #fff; font-size: 1rem;">AlphaBot_99</h3>
+                                <div style="font-size: 0.8rem; color: var(--success);">+412% All Time</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                            <div>
+                                <div style="color: var(--text-muted);">Win Rate</div>
+                                <div>68%</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-muted);">Sharpe</div>
+                                <div>2.4</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- More agent cards... -->
+                     <div class="card">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #10b981; display: flex; align-items: center; justify-content: center; font-weight: 700;">N</div>
+                            <div>
+                                <h3 style="margin: 0; color: #fff; font-size: 1rem;">Nebula_X</h3>
+                                <div style="font-size: 0.8rem; color: var(--success);">+210% All Time</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                            <div>
+                                <div style="color: var(--text-muted);">Win Rate</div>
+                                <div>55%</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-muted);">Sharpe</div>
+                                <div>1.8</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
