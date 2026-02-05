@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <!-- Phantom Provider -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <!-- Privy SDK -->
+    <script src="https://cdn.privy.io/js/privy.js"></script>
     <style>
         :root {
             --bg-dark: #0a0b0e;
@@ -262,7 +262,7 @@
         <div class="brand" onclick="window.location.href='/'">SOCIENTIC</div>
         <div style="display: flex; gap: 1rem; align-items: center;">
             <div id="telegram-login-container"></div>
-            <button id="connect-wallet" class="btn hidden">Connect Phantom</button>
+            <button id="connect-wallet" class="btn hidden">Connect Wallet</button>
         </div>
         <div id="wallet-display" class="hidden">
             <span id="user-display" style="margin-right: 1rem; font-family: monospace; color: var(--text-muted);"></span>
@@ -298,7 +298,7 @@
                         <div style="width: 100%; height: 1px; background: var(--border); margin: 1rem 0;"></div>
                         
                         <p style="font-size: 0.9rem; color: var(--text-muted);">New user? Spawn a bot now:</p>
-                        <button class="btn btn-outline" style="width: 100%" onclick="connectWallet()">Spawn with Phantom (SOL)</button>
+                        <button id="privy-connect-btn" class="btn btn-outline" style="width: 100%" onclick="connectPrivy()">Connect Wallet</button>
                     </div>
                 </div>
             </div>
@@ -451,6 +451,10 @@
             // Logic to update backend would go here
         }
 
+        function toggleGroupOptIn(el) {
+            console.log(`Group Opt-In Toggled: ${el.checked}`);
+        }
+
         // Telegram Auth Callback
         function onTelegramAuth(user) {
             console.log('Telegram User:', user);
@@ -460,25 +464,32 @@
             fetchUserStats(user.id); 
         }
 
-        // Phantom Wallet Logic
-        async function connectWallet() {
-            // Check for Solana/Phantom
-            const isPhantomInstalled = window.solana && window.solana.isPhantom;
-            
-            if (isPhantomInstalled) {
-                try {
-                    const resp = await window.solana.connect();
-                    const pubKey = resp.publicKey.toString();
-                    console.log("Connected to Phantom:", pubKey);
-                    unlockDashboard(pubKey);
-                    fetchUserStats(pubKey);
-                } catch (err) {
-                    console.error("User rejected connection", err);
-                    alert("Connection rejected by user");
-                }
+        // Privy Wallet Logic
+        // In production, use your actual Privy App ID
+        const PRIVY_APP_ID = 'clp8s5s5s0000l90876543210'; 
+        let privy = null;
+
+        window.onload = () => {
+            if (window.Privy) {
+                privy = new Privy({
+                    appId: PRIVY_APP_ID,
+                    onSuccess: (user) => {
+                        console.log('Privy user:', user);
+                        const wallet = user.wallet ? user.wallet.address : user.email;
+                        unlockDashboard(wallet);
+                        fetchUserStats(wallet);
+                    }
+                });
+            }
+        };
+
+        function connectPrivy() {
+            if (privy) {
+                privy.login();
             } else {
-                alert("Phantom wallet not found. Please install the extension.");
-                window.open("https://phantom.app/", "_blank");
+                // Fallback if SDK fails to load or no ID
+                alert("Privy SDK initializing... (Mock Mode for Demo)");
+                unlockDashboard("0xPrivyWallet...8888");
             }
         }
 
@@ -494,11 +505,15 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
             
+            document.getElementById('view-my-agent').classList.add('hidden');
+            document.getElementById('view-top-agents').classList.add('hidden');
+            document.getElementById('view-marketplace').classList.add('hidden');
+
             if (tabId === 'my-agent') {
                 document.getElementById('view-my-agent').classList.remove('hidden');
-                document.getElementById('view-marketplace').classList.add('hidden');
+            } else if (tabId === 'top-agents') {
+                document.getElementById('view-top-agents').classList.remove('hidden');
             } else {
-                document.getElementById('view-my-agent').classList.add('hidden');
                 document.getElementById('view-marketplace').classList.remove('hidden');
             }
         }
@@ -517,7 +532,7 @@
         }
 
         document.getElementById('disconnect-btn').addEventListener('click', () => {
-             if (window.solana) window.solana.disconnect();
+             if (privy) privy.logout();
              location.reload();
         });
     </script>
